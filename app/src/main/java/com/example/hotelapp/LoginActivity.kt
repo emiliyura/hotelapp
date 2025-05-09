@@ -17,7 +17,7 @@ import com.example.hotelapp.ErrorResponse
 
 
 class LoginActivity : AppCompatActivity() {
-    private lateinit var usernameInput: TextInputEditText
+    private lateinit var emailInput: TextInputEditText
     private lateinit var passwordInput: TextInputEditText
     private lateinit var loginButton: Button
     private lateinit var registerButton: Button
@@ -25,23 +25,22 @@ class LoginActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
+        
+        // Скрываем верхнюю панель действий (ActionBar)
+        supportActionBar?.hide()
 
         // Initialize views
-        usernameInput = findViewById(R.id.emailInput)
+        emailInput = findViewById(R.id.emailInput)
         passwordInput = findViewById(R.id.passwordInput)
         loginButton = findViewById(R.id.loginButton)
         registerButton = findViewById(R.id.registerButton)
-
-        // Проверка входа должна быть после инициализации views,
-        // но не нужно проверять сразу, чтобы избежать циклических переходов
-        // между активити при ошибках
         
         loginButton.setOnClickListener {
-            val username = usernameInput.text.toString()
+            val email = emailInput.text.toString()
             val password = passwordInput.text.toString()
 
-            if (validateInput(username, password)) {
-                loginUser(username, password)
+            if (validateInput(email, password)) {
+                loginUser(email, password)
             }
         }
 
@@ -50,18 +49,19 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
-    private fun validateInput(username: String, password: String): Boolean {
-        if (username.isEmpty() || password.isEmpty()) {
+    private fun validateInput(email: String, password: String): Boolean {
+        if (email.isEmpty() || password.isEmpty()) {
             Toast.makeText(this, "Пожалуйста, заполните все поля", Toast.LENGTH_SHORT).show()
             return false
         }
         return true
     }
 
-    private fun loginUser(username: String, password: String) {
+    private fun loginUser(email: String, password: String) {
         CoroutineScope(Dispatchers.Main).launch {
             try {
-                val loginRequest = LoginRequest(username, password)
+                // Используем email как username для запроса LoginRequest
+                val loginRequest = LoginRequest(username = email, password = password)
                 Log.d("LoginActivity", "Отправляем данные: $loginRequest")
 
                 val response = withContext(Dispatchers.IO) {
@@ -124,7 +124,7 @@ class LoginActivity : AppCompatActivity() {
 
                     // Переводим сообщение об ошибке на русский
                     val russianMessage = when (errorMessage) {
-                        "Invalid username or password" -> "Неверное имя пользователя или пароль"
+                        "Invalid username or password" -> "Неверный email или пароль"
                         "User not found" -> "Пользователь не найден"
                         else -> "Ошибка входа: $errorMessage"
                     }

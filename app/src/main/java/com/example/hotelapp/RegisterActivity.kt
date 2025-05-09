@@ -26,6 +26,9 @@ class RegisterActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_register)
 
+        // Скрываем верхнюю панель действий (ActionBar)
+        supportActionBar?.hide()
+
         // Initialize views
         usernameInput = findViewById(R.id.usernameInput)
         emailInput = findViewById(R.id.emailInput)

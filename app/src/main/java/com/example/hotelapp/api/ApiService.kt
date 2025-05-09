@@ -18,7 +18,11 @@ interface ApiService {
 data class LoginRequest(
     val username: String,
     val password: String
-)
+) {
+    override fun toString(): String {
+        return "LoginRequest(username='$username', password='***')"
+    }
+}
 
 data class AuthResponse(
     val token: String,
