@@ -26,7 +26,7 @@
             android:name=".RegisterActivity"
             android:exported="false" />
         <activity
-            android:name=".ProfileActivity"
+            android:name=".MainActivity"
             android:exported="false" />
     </application>
 

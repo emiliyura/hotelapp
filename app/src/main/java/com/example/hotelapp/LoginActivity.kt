@@ -108,8 +108,8 @@ class LoginActivity : AppCompatActivity() {
                     val savedUsername = sharedPrefs.getString("username", "")
                     Log.d("LoginActivity", "Сохранено в SharedPreferences: username=$savedUsername, email=$savedEmail")
                     
-                    // Запускаем ProfileActivity
-                    val intent = Intent(this@LoginActivity, ProfileActivity::class.java)
+                    // Запускаем MainActivity вместо ProfileActivity
+                    val intent = Intent(this@LoginActivity, MainActivity::class.java)
                     startActivity(intent)
                     finish()
                 } else {

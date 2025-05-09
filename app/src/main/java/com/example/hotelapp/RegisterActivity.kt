@@ -89,7 +89,7 @@ class RegisterActivity : AppCompatActivity() {
                             putBoolean("isLoggedIn", true)
                             apply()
                         }
-                        startActivity(Intent(this@RegisterActivity, ProfileActivity::class.java))
+                        startActivity(Intent(this@RegisterActivity, MainActivity::class.java))
                         finish()
                     }
                 } else {
