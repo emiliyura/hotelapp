@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    id("kotlin-kapt")
 }
 
 android {
@@ -57,4 +58,11 @@ dependencies {
 
     // OkHttp для логирования запросов
     implementation("com.squareup.okhttp3:logging-interceptor:4.9.0")
+    
+    // Glide для загрузки изображений
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+    kapt("com.github.bumptech.glide:compiler:4.16.0")
+    
+    // SwipeRefreshLayout для обновления списка
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 }
