@@ -16,12 +16,12 @@ object ApiClient {
 
         val client = OkHttpClient.Builder()
             .addInterceptor(logging)
-            .connectTimeout(15, TimeUnit.SECONDS)
-            .readTimeout(15, TimeUnit.SECONDS)
-            .writeTimeout(15, TimeUnit.SECONDS)
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(true)
             .addInterceptor { chain ->
                 val request = chain.request().newBuilder()
-                    .addHeader("Content-Type", "application/json")
                     .build()
                 chain.proceed(request)
             }
@@ -35,6 +35,10 @@ object ApiClient {
     }
 
     val api: ApiService by lazy {
+        retrofit.create(ApiService::class.java)
+    }
+    
+    val apiService: ApiService by lazy {
         retrofit.create(ApiService::class.java)
     }
 } 

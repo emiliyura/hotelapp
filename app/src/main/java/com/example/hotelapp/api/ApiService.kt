@@ -1,6 +1,10 @@
 package com.example.hotelapp.api
 
+import com.example.hotelapp.model.Hotel
 import com.example.hotelapp.model.User
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import retrofit2.Call
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -13,6 +17,22 @@ interface ApiService {
 
     @GET("api/users/profile")
     suspend fun getUserProfile(@Header("Authorization") token: String): Response<User>
+    
+    @Multipart
+    @POST("api/hotels")
+    fun addHotel(
+        @Part("name") name: RequestBody,
+        @Part("pricePerNight") pricePerNight: RequestBody,
+        @Part("description") description: RequestBody,
+        @Part("roomCount") roomCount: RequestBody,
+        @Part image: MultipartBody.Part?
+    ): Call<Hotel>
+    
+    @GET("api/hotels")
+    suspend fun getAllHotels(): Response<List<Hotel>>
+    
+    @GET("api/hotels/{id}")
+    suspend fun getHotelById(@Path("id") id: Long): Response<Hotel>
 }
 
 data class LoginRequest(

@@ -14,6 +14,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.example.hotelapp.ErrorResponse
+import com.example.hotelapp.utils.ServerChecker
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 
 
 class LoginActivity : AppCompatActivity() {
@@ -47,6 +50,22 @@ class LoginActivity : AppCompatActivity() {
         registerButton.setOnClickListener {
             startActivity(Intent(this, RegisterActivity::class.java))
         }
+        
+        // Проверяем доступность сервера при запуске
+        checkServerAvailability()
+    }
+    
+    private fun checkServerAvailability() {
+        CoroutineScope(Dispatchers.Main).launch {
+            val isServerAvailable = ServerChecker.isEmulatorServerReachable()
+            if (!isServerAvailable) {
+                Toast.makeText(
+                    this@LoginActivity,
+                    "Внимание: Сервер недоступен. Убедитесь, что сервер запущен на порту 8080.",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
     }
 
     private fun validateInput(email: String, password: String): Boolean {
@@ -58,7 +77,24 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun loginUser(email: String, password: String) {
+        // Показываем индикатор загрузки
+        loginButton.isEnabled = false
+        loginButton.text = "Вход..."
+        
         CoroutineScope(Dispatchers.Main).launch {
+            // Сначала проверяем доступность сервера
+            val isServerAvailable = ServerChecker.isEmulatorServerReachable()
+            if (!isServerAvailable) {
+                Toast.makeText(
+                    this@LoginActivity,
+                    "Сервер недоступен. Убедитесь, что сервер запущен на порту 8080.",
+                    Toast.LENGTH_LONG
+                ).show()
+                loginButton.isEnabled = true
+                loginButton.text = "Войти"
+                return@launch
+            }
+            
             try {
                 // Используем email как username для запроса LoginRequest
                 val loginRequest = LoginRequest(username = email, password = password)
@@ -137,6 +173,24 @@ class LoginActivity : AppCompatActivity() {
                         ).show()
                     }
                 }
+            } catch (e: SocketTimeoutException) {
+                Log.e("LoginActivity", "Ошибка подключения к серверу", e)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        this@LoginActivity,
+                        "Не удалось подключиться к серверу. Проверьте, запущен ли сервер на порту 8080.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            } catch (e: UnknownHostException) {
+                Log.e("LoginActivity", "Сервер не найден", e)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        this@LoginActivity,
+                        "Сервер не найден. Проверьте подключение к интернету и убедитесь, что сервер запущен.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
             } catch (e: Exception) {
                 Log.e("LoginActivity", "Исключение при входе", e)
                 withContext(Dispatchers.Main) {
@@ -145,6 +199,12 @@ class LoginActivity : AppCompatActivity() {
                         "Ошибка: ${e.message}",
                         Toast.LENGTH_LONG
                     ).show()
+                }
+            } finally {
+                // Восстанавливаем состояние кнопки
+                withContext(Dispatchers.Main) {
+                    loginButton.isEnabled = true
+                    loginButton.text = "Войти"
                 }
             }
         }
