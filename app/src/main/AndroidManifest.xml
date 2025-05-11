@@ -37,6 +37,10 @@
         <activity
             android:name=".HotelUploadActivity"
             android:exported="false" />
+        <activity
+            android:name=".HotelDetailActivity"
+            android:exported="false"
+            android:theme="@style/AppTheme.NoActionBar" />
     </application>
 
 </manifest>

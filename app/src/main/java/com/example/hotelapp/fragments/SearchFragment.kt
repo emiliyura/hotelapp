@@ -1,5 +1,6 @@
 package com.example.hotelapp.fragments
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -13,6 +14,7 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import com.example.hotelapp.HotelDetailActivity
 import com.example.hotelapp.R
 import com.example.hotelapp.adapters.HotelAdapter
 import com.example.hotelapp.api.ApiClient
@@ -191,13 +193,10 @@ class SearchFragment : Fragment(), HotelAdapter.OnHotelClickListener {
     }
     
     override fun onHotelClick(hotel: Hotel) {
-        // Обработка нажатия на отель
-        Toast.makeText(requireContext(), "Выбран отель: ${hotel.name}", Toast.LENGTH_SHORT).show()
-        
-        // Здесь можно добавить переход на экран детальной информации об отеле
-        // val intent = Intent(requireContext(), HotelDetailActivity::class.java)
-        // intent.putExtra("hotel_id", hotel.id)
-        // startActivity(intent)
+        // Открываем HotelDetailActivity при нажатии на отель
+        val intent = Intent(requireContext(), HotelDetailActivity::class.java)
+        intent.putExtra(HotelDetailActivity.EXTRA_HOTEL, hotel)
+        startActivity(intent)
     }
     
     companion object {
