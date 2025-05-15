@@ -41,6 +41,7 @@
             android:name=".HotelDetailActivity"
             android:exported="false"
             android:theme="@style/AppTheme.NoActionBar" />
+        <activity android:name=".BookingActivity" />
     </application>
 
 </manifest>

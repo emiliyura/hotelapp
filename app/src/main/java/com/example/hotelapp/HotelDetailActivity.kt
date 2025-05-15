@@ -16,6 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import android.widget.ImageView
+import android.content.Intent
 
 class HotelDetailActivity : AppCompatActivity() {
     
@@ -67,9 +68,9 @@ class HotelDetailActivity : AppCompatActivity() {
         }
         
         // Обработка нажатия на кнопку
-        bookButton.setOnClickListener {
-            Toast.makeText(this, "Функция бронирования в разработке", Toast.LENGTH_SHORT).show()
-        }
+        // bookButton.setOnClickListener {
+        //     Toast.makeText(this, "Функция бронирования в разработке", Toast.LENGTH_SHORT).show()
+        // }
     }
     
     private fun loadHotelDetails(hotelId: Long) {
@@ -108,6 +109,14 @@ class HotelDetailActivity : AppCompatActivity() {
         
         // Отображение цены в кнопке бронирования
         bookButton.text = "Забронировать - ${hotel.pricePerNight} ₽ за ночь"
+        
+        // Добавляем обработчик нажатия на кнопку бронирования
+        bookButton.setOnClickListener {
+            val intent = Intent(this, BookingActivity::class.java).apply {
+                putExtra(BookingActivity.EXTRA_HOTEL, hotel)
+            }
+            startActivity(intent)
+        }
         
         // Загрузка изображения
         if (!hotel.imageUrl.isNullOrEmpty()) {

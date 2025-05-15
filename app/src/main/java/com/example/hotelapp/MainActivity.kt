@@ -6,7 +6,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.example.hotelapp.fragments.ProfileFragment
 import com.example.hotelapp.fragments.SearchFragment
-import com.example.hotelapp.fragments.SettingsFragment
+import com.example.hotelapp.SettingsFragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
 class MainActivity : AppCompatActivity() {

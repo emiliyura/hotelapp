@@ -126,19 +126,14 @@ class LoginActivity : AppCompatActivity() {
                     
                     val sharedPrefs = getSharedPreferences("UserData", MODE_PRIVATE)
                     with(sharedPrefs.edit()) {
-                        // Сохраняем данные пользователя
                         putString("username", userResponse.username)
                         putString("email", userResponse.email)
-                        putString("name", userResponse.username) // Используем имя пользователя как имя по умолчанию
+                        putString("name", userResponse.username)
                         putString("userId", userResponse.id.toString())
-                        
-                        // Добавим дополнительные данные из формы входа
                         putString("lastLogin", java.util.Date().toString())
-                        
                         putBoolean("isLoggedIn", true)
                         apply()
                     }
-                    
                     // Проверим, что сохранено в SharedPreferences перед переходом
                     val savedEmail = sharedPrefs.getString("email", "")
                     val savedUsername = sharedPrefs.getString("username", "")
