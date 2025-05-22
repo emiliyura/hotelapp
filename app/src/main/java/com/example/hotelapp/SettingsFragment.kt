@@ -1,6 +1,7 @@
 package com.example.hotelapp
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -17,6 +18,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import android.util.Log
 import android.widget.Toast
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 class SettingsFragment : Fragment() {
     private lateinit var bookingsRecyclerView: RecyclerView
@@ -28,7 +30,17 @@ class SettingsFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(R.layout.fragment_settings, container, false)
+        val view = inflater.inflate(R.layout.fragment_settings, container, false)
+
+        // Настройка FAB для добавления отеля
+        val fabAddHotel = view.findViewById<FloatingActionButton>(R.id.fab_add_hotel)
+        fabAddHotel.setOnClickListener {
+            // Запуск активити для добавления отеля
+            val intent = Intent(activity, HotelUploadActivity::class.java)
+            startActivity(intent)
+        }
+
+        return view
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -116,4 +128,4 @@ class BookingsAdapter : RecyclerView.Adapter<BookingsAdapter.BookingViewHolder>(
             datesTextView.text = "${booking.checkInDate} - ${booking.checkOutDate}"
         }
     }
-} 
+}
