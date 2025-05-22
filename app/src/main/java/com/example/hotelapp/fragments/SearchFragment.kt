@@ -61,6 +61,9 @@ class SearchFragment : Fragment(), HotelAdapter.OnHotelClickListener {
         }
         
         // Настройка SearchView
+        searchView.queryHint = "Введите название отеля"
+        searchView.isIconified = false
+        searchView.requestFocus()
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 hotelAdapter.filter.filter(query)
@@ -72,6 +75,13 @@ class SearchFragment : Fragment(), HotelAdapter.OnHotelClickListener {
                 return false
             }
         })
+
+        // Добавляем кнопку очистки
+        searchView.setOnCloseListener {
+            searchView.setQuery("", false)
+            hotelAdapter.filter.filter("")
+            true
+        }
         
         // Загрузка отелей при создании фрагмента
         loadHotels()
