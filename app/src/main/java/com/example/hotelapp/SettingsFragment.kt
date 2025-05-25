@@ -56,6 +56,15 @@ class SettingsFragment : Fragment() {
         bookingsRecyclerView.adapter = bookingsAdapter
 
         loadUserBookings()
+        
+        // Check user role and set FAB visibility
+        val userRole = getUserRole()
+        val fabAddHotel = view.findViewById<FloatingActionButton>(R.id.fab_add_hotel)
+        if (userRole == "admin") {
+            fabAddHotel.visibility = View.VISIBLE
+        } else {
+            fabAddHotel.visibility = View.GONE
+        }
     }
 
     private fun loadUserBookings() {
@@ -90,6 +99,11 @@ class SettingsFragment : Fragment() {
         return prefs.getString("username", "") ?: ""
     }
 
+    private fun getUserRole(): String {
+        val prefs = requireContext().getSharedPreferences("UserData", Context.MODE_PRIVATE)
+        return prefs.getString("role", "user") ?: "user"
+    }
+
     private fun getToken(): String {
         val prefs = requireContext().getSharedPreferences("UserData", Context.MODE_PRIVATE)
         return prefs.getString("token", "") ?: ""
@@ -98,6 +112,7 @@ class SettingsFragment : Fragment() {
 
 class BookingsAdapter : RecyclerView.Adapter<BookingsAdapter.BookingViewHolder>() {
     private var bookings: List<Booking> = emptyList()
+    private val apiService = ApiService.create()
 
     fun submitList(newBookings: List<Booking>) {
         bookings = newBookings
@@ -120,10 +135,22 @@ class BookingsAdapter : RecyclerView.Adapter<BookingsAdapter.BookingViewHolder>(
         private val hotelNameTextView: TextView = itemView.findViewById(R.id.hotelNameTextView)
         private val roomNumberTextView: TextView = itemView.findViewById(R.id.roomNumberTextView)
         private val datesTextView: TextView = itemView.findViewById(R.id.datesTextView)
+        private val apiService = ApiService.create()
 
         fun bind(booking: Booking) {
-            // TODO: Загрузить название отеля по booking.hotelId
-            hotelNameTextView.text = "Отель #${booking.hotelId}"
+            // Загружаем информацию об отеле
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val hotel = apiService.getHotel(booking.hotelId)
+                    withContext(Dispatchers.Main) {
+                        hotelNameTextView.text = hotel.name
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        hotelNameTextView.text = "Отель #${booking.hotelId}"
+                    }
+                }
+            }
             roomNumberTextView.text = "Номер: ${booking.roomNumber}"
             datesTextView.text = "${booking.checkInDate} - ${booking.checkOutDate}"
         }

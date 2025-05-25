@@ -129,9 +129,9 @@ class LoginActivity : AppCompatActivity() {
                         putString("username", userResponse.username)
                         putString("email", userResponse.email)
                         putString("name", userResponse.username)
-                        putString("userId", userResponse.id.toString())
                         putString("lastLogin", java.util.Date().toString())
                         putBoolean("isLoggedIn", true)
+                        putString("role", userResponse.role)
                         apply()
                     }
                     // Проверим, что сохранено в SharedPreferences перед переходом
