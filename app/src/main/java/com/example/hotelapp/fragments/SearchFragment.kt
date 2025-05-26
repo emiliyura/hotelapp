@@ -1,5 +1,6 @@
 package com.example.hotelapp.fragments
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -17,6 +18,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.example.hotelapp.HotelDetailActivity
 import com.example.hotelapp.R
 import com.example.hotelapp.adapters.HotelAdapter
+import com.example.hotelapp.adapters.SearchHistoryAdapter
 import com.example.hotelapp.api.ApiClient
 import com.example.hotelapp.model.Hotel
 import com.example.hotelapp.utils.ServerChecker
@@ -30,12 +32,24 @@ import java.net.UnknownHostException
 class SearchFragment : Fragment(), HotelAdapter.OnHotelClickListener {
     
     private lateinit var recyclerView: RecyclerView
+    private lateinit var searchHistoryRecyclerView: RecyclerView
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var searchView: SearchView
     private lateinit var progressBar: ProgressBar
     private lateinit var emptyView: TextView
     
     private val hotelAdapter = HotelAdapter(this)
+    private val searchHistoryAdapter = SearchHistoryAdapter(
+        onItemClick = { query ->
+            searchView.setQuery(query, true)
+            hideSearchHistory()
+        },
+        onDeleteClick = { query ->
+            removeFromSearchHistory(query)
+        }
+    )
+    
+    private val MAX_HISTORY_ITEMS = 10
     
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -46,14 +60,19 @@ class SearchFragment : Fragment(), HotelAdapter.OnHotelClickListener {
         
         // Инициализация UI элементов
         recyclerView = view.findViewById(R.id.hotels_recycler_view)
+        searchHistoryRecyclerView = view.findViewById(R.id.search_history_recycler_view)
         swipeRefreshLayout = view.findViewById(R.id.swipe_refresh)
         searchView = view.findViewById(R.id.search_view)
         progressBar = view.findViewById(R.id.progress_bar)
         emptyView = view.findViewById(R.id.empty_view)
         
-        // Настройка RecyclerView
+        // Настройка RecyclerView для отелей
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = hotelAdapter
+        
+        // Настройка RecyclerView для истории поиска
+        searchHistoryRecyclerView.layoutManager = LinearLayoutManager(requireContext())
+        searchHistoryRecyclerView.adapter = searchHistoryAdapter
         
         // Настройка SwipeRefreshLayout
         swipeRefreshLayout.setOnRefreshListener {
@@ -66,20 +85,39 @@ class SearchFragment : Fragment(), HotelAdapter.OnHotelClickListener {
         searchView.requestFocus()
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
+                query?.let {
+                    if (it.isNotBlank()) {
+                        addToSearchHistory(it)
+                        hideSearchHistory()
+                    }
+                }
                 hotelAdapter.filter.filter(query)
                 return false
             }
             
             override fun onQueryTextChange(newText: String?): Boolean {
+                if (newText.isNullOrBlank()) {
+                    showSearchHistory()
+                } else {
+                    hideSearchHistory()
+                }
                 hotelAdapter.filter.filter(newText)
                 return false
             }
         })
 
+        // Показываем историю поиска при фокусе на SearchView
+        searchView.setOnQueryTextFocusChangeListener { _, hasFocus ->
+            if (hasFocus && searchView.query.isNullOrBlank()) {
+                showSearchHistory()
+            }
+        }
+        
         // Добавляем кнопку очистки
         searchView.setOnCloseListener {
             searchView.setQuery("", false)
             hotelAdapter.filter.filter("")
+            showSearchHistory()
             true
         }
         
@@ -207,6 +245,60 @@ class SearchFragment : Fragment(), HotelAdapter.OnHotelClickListener {
         val intent = Intent(requireContext(), HotelDetailActivity::class.java)
         intent.putExtra(HotelDetailActivity.EXTRA_HOTEL, hotel)
         startActivity(intent)
+    }
+    
+    private fun addToSearchHistory(query: String) {
+        val sharedPrefs = requireContext().getSharedPreferences("SearchHistory", Context.MODE_PRIVATE)
+        val history = getSearchHistory().toMutableList()
+        
+        // Удаляем дубликаты
+        history.remove(query)
+        
+        // Добавляем новый запрос в начало списка
+        history.add(0, query)
+        
+        // Ограничиваем количество элементов
+        if (history.size > MAX_HISTORY_ITEMS) {
+            history.removeAt(history.size - 1)
+        }
+        
+        // Сохраняем историю
+        sharedPrefs.edit().putString("history", history.joinToString(",")).apply()
+        
+        // Обновляем адаптер
+        searchHistoryAdapter.setSearchHistory(history)
+    }
+    
+    private fun removeFromSearchHistory(query: String) {
+        val sharedPrefs = requireContext().getSharedPreferences("SearchHistory", Context.MODE_PRIVATE)
+        val history = getSearchHistory().toMutableList()
+        
+        history.remove(query)
+        
+        sharedPrefs.edit().putString("history", history.joinToString(",")).apply()
+        searchHistoryAdapter.setSearchHistory(history)
+    }
+    
+    private fun getSearchHistory(): List<String> {
+        val sharedPrefs = requireContext().getSharedPreferences("SearchHistory", Context.MODE_PRIVATE)
+        val historyString = sharedPrefs.getString("history", "") ?: ""
+        return if (historyString.isBlank()) {
+            emptyList()
+        } else {
+            historyString.split(",")
+        }
+    }
+    
+    private fun showSearchHistory() {
+        val history = getSearchHistory()
+        if (history.isNotEmpty()) {
+            searchHistoryAdapter.setSearchHistory(history)
+            searchHistoryRecyclerView.visibility = View.VISIBLE
+        }
+    }
+    
+    private fun hideSearchHistory() {
+        searchHistoryRecyclerView.visibility = View.GONE
     }
     
     companion object {

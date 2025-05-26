@@ -20,6 +20,12 @@ interface ApiService {
     @GET("bookings")
     suspend fun getUserBookings(@Query("username") username: String): List<Booking>
 
+    @GET("bookings/all")
+    suspend fun getAllBookings(): List<Booking>
+
+    @DELETE("bookings/{id}")
+    suspend fun deleteBooking(@Path("id") id: Long): Response<Unit>
+
     companion object {
         private const val BASE_URL = "http://10.0.2.2:8080/api/"
 

@@ -43,7 +43,7 @@
         android:id="@+id/updateProfileButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Обновить данные профиля"
+        android:text="справка"
         android:layout_marginTop="16dp"
         android:layout_marginBottom="16dp"/>
 
@@ -51,6 +51,6 @@
         android:id="@+id/logoutButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Logout"
+        android:text="Выйти из аккаунта"
         android:layout_marginTop="16dp"/>
 </LinearLayout> 

@@ -12,6 +12,7 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.example.hotelapp.LoginActivity
 import com.example.hotelapp.R
+import com.example.hotelapp.HelpActivity
 
 class ProfileFragment : Fragment() {
     private lateinit var usernameText: TextView
@@ -68,11 +69,7 @@ class ProfileFragment : Fragment() {
     }
     
     private fun showHelp() {
-        Toast.makeText(
-            requireContext(),
-            "В данном приложении вы можете просматривать информацию о своем профиле, " +
-            "искать отели и настраивать приложение в разделе настроек.",
-            Toast.LENGTH_LONG
-        ).show()
+        val intent = Intent(requireContext(), HelpActivity::class.java)
+        startActivity(intent)
     }
 } 

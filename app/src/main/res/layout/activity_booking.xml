@@ -4,17 +4,31 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="16dp"
+        android:paddingTop="48dp">
+        <TextView
+            android:id="@+id/welcomeDescription"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="center"
+            android:text="\n\"
+            android:textColor="@color/black"
+            android:textSize="16sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/welcomeTitle" />
 
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
-            android:hint="Дата заезда (YYYY-MM-DD)">
+            android:hint="Дата заезда">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/checkInDateEditText"
@@ -27,7 +41,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
-            android:hint="Дата выезда (YYYY-MM-DD)">
+            android:hint="Дата выезда">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/checkOutDateEditText"

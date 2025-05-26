@@ -19,6 +19,7 @@ import kotlinx.coroutines.withContext
 import android.util.Log
 import android.widget.Toast
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import android.widget.ImageView
 
 class SettingsFragment : Fragment() {
     private lateinit var bookingsRecyclerView: RecyclerView
@@ -46,8 +47,8 @@ class SettingsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        Log.d("SettingsFragment", "onViewCreated: SettingsFragment открыт")
-        Toast.makeText(requireContext(), "SettingsFragment открыт", Toast.LENGTH_SHORT).show()
+        //Log.d("SettingsFragment", "onViewCreated: SettingsFragment открыт")
+        //Toast.makeText(requireContext(), "SettingsFragment открыт", Toast.LENGTH_SHORT).show()
 
         bookingsRecyclerView = view.findViewById(R.id.bookingsRecyclerView)
         noBookingsTextView = view.findViewById(R.id.noBookingsTextView)
@@ -55,7 +56,7 @@ class SettingsFragment : Fragment() {
         bookingsRecyclerView.layoutManager = LinearLayoutManager(context)
         bookingsRecyclerView.adapter = bookingsAdapter
 
-        loadUserBookings()
+        loadBookings()
         
         // Check user role and set FAB visibility
         val userRole = getUserRole()
@@ -67,28 +68,39 @@ class SettingsFragment : Fragment() {
         }
     }
 
-    private fun loadUserBookings() {
-        val username = getCurrentUsername() // Получаем имя текущего пользователя
-        Log.d("SettingsFragment", "Загружаем брони для пользователя: $username")
+    private fun loadBookings() {
+        val userRole = getUserRole()
+        Log.d("SettingsFragment", "Загрузка бронирований. Роль пользователя: $userRole")
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val bookings = ApiService.create().getUserBookings(username)
-                Log.d("SettingsFragment", "Получено бронирований: ${bookings.size}")
+                val bookings = if (userRole == "admin") {
+                    Log.d("SettingsFragment", "Загружаем ВСЕ бронирования (админ)")
+                    ApiService.create().getAllBookings()
+                } else {
+                    val username = getCurrentUsername()
+                    Log.d("SettingsFragment", "Загружаем брони для пользователя: $username (не админ)")
+                    ApiService.create().getUserBookings(username)
+                }
+
+                Log.d("SettingsFragment", "API запрос выполнен. Получено бронирований: ${bookings.size}")
                 withContext(Dispatchers.Main) {
                     if (bookings.isEmpty()) {
+                        Log.d("SettingsFragment", "Список бронирований пуст. Отображаем noBookingsTextView.")
                         noBookingsTextView.visibility = View.VISIBLE
                         bookingsRecyclerView.visibility = View.GONE
                     } else {
+                        Log.d("SettingsFragment", "Список бронирований не пуст. Отображаем bookingsRecyclerView.")
                         noBookingsTextView.visibility = View.GONE
                         bookingsRecyclerView.visibility = View.VISIBLE
-                        bookingsAdapter.submitList(bookings)
+                        bookingsAdapter.submitList(bookings, userRole)
                     }
                 }
             } catch (e: Exception) {
                 Log.e("SettingsFragment", "Ошибка при загрузке бронирований", e)
                 withContext(Dispatchers.Main) {
                     // Обработка ошибки
+                    Toast.makeText(requireContext(), "Ошибка при загрузке бронирований: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -113,31 +125,34 @@ class SettingsFragment : Fragment() {
 class BookingsAdapter : RecyclerView.Adapter<BookingsAdapter.BookingViewHolder>() {
     private var bookings: List<Booking> = emptyList()
     private val apiService = ApiService.create()
+    private var userRole: String = "user"
 
-    fun submitList(newBookings: List<Booking>) {
+    fun submitList(newBookings: List<Booking>, userRole: String) {
         bookings = newBookings
+        this.userRole = userRole
         notifyDataSetChanged()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BookingViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_booking, parent, false)
-        return BookingViewHolder(view)
+        return BookingViewHolder(view, apiService)
     }
 
     override fun onBindViewHolder(holder: BookingViewHolder, position: Int) {
-        holder.bind(bookings[position])
+        holder.bind(bookings[position], userRole)
     }
 
     override fun getItemCount() = bookings.size
 
-    class BookingViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    class BookingViewHolder(itemView: View, private val apiService: ApiService) : RecyclerView.ViewHolder(itemView) {
         private val hotelNameTextView: TextView = itemView.findViewById(R.id.hotelNameTextView)
         private val roomNumberTextView: TextView = itemView.findViewById(R.id.roomNumberTextView)
         private val datesTextView: TextView = itemView.findViewById(R.id.datesTextView)
-        private val apiService = ApiService.create()
+        private val usernameTextView: TextView = itemView.findViewById(R.id.usernameTextView)
+        private val deleteButton: ImageView = itemView.findViewById(R.id.deleteButton)
 
-        fun bind(booking: Booking) {
+        fun bind(booking: Booking, userRole: String) {
             // Загружаем информацию об отеле
             CoroutineScope(Dispatchers.IO).launch {
                 try {
@@ -153,6 +168,38 @@ class BookingsAdapter : RecyclerView.Adapter<BookingsAdapter.BookingViewHolder>(
             }
             roomNumberTextView.text = "Номер: ${booking.roomNumber}"
             datesTextView.text = "${booking.checkInDate} - ${booking.checkOutDate}"
+            
+            // Отображаем имя пользователя и кнопку удаления только для администратора
+            if (userRole == "admin") {
+                usernameTextView.visibility = View.VISIBLE
+                usernameTextView.text = "Пользователь: ${booking.username}"
+                deleteButton.visibility = View.VISIBLE
+                deleteButton.setOnClickListener {
+                    // Обработчик нажатия на кнопку удаления
+                    CoroutineScope(Dispatchers.IO).launch {
+                        try {
+                            val response = apiService.deleteBooking(booking.id!!)
+                            withContext(Dispatchers.Main) {
+                                if (response.isSuccessful) {
+                                    Toast.makeText(itemView.context, "Бронирование удалено", Toast.LENGTH_SHORT).show()
+                                    // Здесь нужно обновить список бронирований в фрагменте
+                                    // Это можно сделать через колбэк или LiveData/StateFlow
+                                } else {
+                                    Toast.makeText(itemView.context, "Ошибка при удалении бронирования", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Log.e("BookingViewHolder", "Ошибка при удалении бронирования", e)
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(itemView.context, "Ошибка: ${e.message}", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                }
+            } else {
+                usernameTextView.visibility = View.GONE
+                deleteButton.visibility = View.GONE
+            }
         }
     }
 }

@@ -7,6 +7,7 @@
         android:id="@+id/bookingsRecyclerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:paddingTop="48dp"
         android:padding="8dp"
         android:clipToPadding="false" />
 
@@ -15,6 +16,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
+        android:layout_marginTop="48dp"
         android:text="У вас пока нет броней"
         android:textSize="18sp"
         android:visibility="gone" />
