@@ -12,6 +12,9 @@ import com.google.android.material.bottomnavigation.BottomNavigationView
 class MainActivity : AppCompatActivity() {
     
     private lateinit var bottomNavigation: BottomNavigationView
+    private lateinit var profileFragment: ProfileFragment
+    private lateinit var searchFragment: SearchFragment
+    private lateinit var settingsFragment: SettingsFragment
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,30 +33,56 @@ class MainActivity : AppCompatActivity() {
             return
         }
         
+        // Инициализируем фрагменты
+        profileFragment = ProfileFragment()
+        searchFragment = SearchFragment()
+        settingsFragment = SettingsFragment()
+        
         bottomNavigation = findViewById(R.id.bottom_navigation)
         
         // Настраиваем слушатель для нижней навигации
         bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.navigation_profile -> {
-                    loadFragment(ProfileFragment())
+                    loadFragment(profileFragment)
                     true
                 }
                 R.id.navigation_search -> {
-                    loadFragment(SearchFragment())
+                    loadFragment(searchFragment)
                     true
                 }
                 R.id.navigation_settings -> {
-                    loadFragment(SettingsFragment())
+                    loadFragment(settingsFragment)
                     true
                 }
                 else -> false
             }
         }
         
-        // По умолчанию загружаем фрагмент профиля
-        loadFragment(ProfileFragment())
-        bottomNavigation.selectedItemId = R.id.navigation_profile
+        // Восстанавливаем выбранный фрагмент или устанавливаем профиль по умолчанию
+        if (savedInstanceState == null) {
+            loadFragment(profileFragment)
+            bottomNavigation.selectedItemId = R.id.navigation_profile
+        } else {
+            // Восстанавливаем выбранный элемент навигации
+            val selectedItemId = savedInstanceState.getInt("selected_nav_item", R.id.navigation_profile)
+            bottomNavigation.selectedItemId = selectedItemId
+            
+            // Восстанавливаем фрагмент, если он еще не восстановлен системой
+            if (supportFragmentManager.fragments.isEmpty()) {
+                when (selectedItemId) {
+                    R.id.navigation_profile -> loadFragment(profileFragment)
+                    R.id.navigation_search -> loadFragment(searchFragment)
+                    R.id.navigation_settings -> loadFragment(settingsFragment)
+                }
+            }
+        }
+    }
+    
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        // Сохраняем выбранный элемент навигации
+        outState.putInt("selected_nav_item", bottomNavigation.selectedItemId)
     }
     
     private fun loadFragment(fragment: Fragment) {

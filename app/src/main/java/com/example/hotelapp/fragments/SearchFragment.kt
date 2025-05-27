@@ -24,6 +24,7 @@ import com.example.hotelapp.model.Hotel
 import com.example.hotelapp.utils.ServerChecker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.SocketTimeoutException
@@ -36,6 +37,7 @@ class SearchFragment : Fragment(), HotelAdapter.OnHotelClickListener {
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var searchView: SearchView
     private lateinit var progressBar: ProgressBar
+    private lateinit var searchProgressBar: ProgressBar
     private lateinit var emptyView: TextView
     
     private val hotelAdapter = HotelAdapter(this)
@@ -50,6 +52,8 @@ class SearchFragment : Fragment(), HotelAdapter.OnHotelClickListener {
     )
     
     private val MAX_HISTORY_ITEMS = 10
+    private var currentQuery: String = ""
+    private var isSearching = false
     
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -64,6 +68,7 @@ class SearchFragment : Fragment(), HotelAdapter.OnHotelClickListener {
         swipeRefreshLayout = view.findViewById(R.id.swipe_refresh)
         searchView = view.findViewById(R.id.search_view)
         progressBar = view.findViewById(R.id.progress_bar)
+        searchProgressBar = view.findViewById(R.id.search_progress_bar)
         emptyView = view.findViewById(R.id.empty_view)
         
         // Настройка RecyclerView для отелей
@@ -87,21 +92,23 @@ class SearchFragment : Fragment(), HotelAdapter.OnHotelClickListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 query?.let {
                     if (it.isNotBlank()) {
+                        currentQuery = it
                         addToSearchHistory(it)
                         hideSearchHistory()
+                        performSearch(it)
                     }
                 }
-                hotelAdapter.filter.filter(query)
                 return false
             }
             
             override fun onQueryTextChange(newText: String?): Boolean {
+                currentQuery = newText ?: ""
                 if (newText.isNullOrBlank()) {
                     showSearchHistory()
                 } else {
                     hideSearchHistory()
+                    performSearch(newText)
                 }
-                hotelAdapter.filter.filter(newText)
                 return false
             }
         })
@@ -115,6 +122,7 @@ class SearchFragment : Fragment(), HotelAdapter.OnHotelClickListener {
         
         // Добавляем кнопку очистки
         searchView.setOnCloseListener {
+            currentQuery = ""
             searchView.setQuery("", false)
             hotelAdapter.filter.filter("")
             showSearchHistory()
@@ -123,8 +131,31 @@ class SearchFragment : Fragment(), HotelAdapter.OnHotelClickListener {
         
         // Загрузка отелей при создании фрагмента
         loadHotels()
+
+        // Восстанавливаем состояние поиска
+        if (savedInstanceState != null) {
+            currentQuery = savedInstanceState.getString("search_query", "")
+            searchView.setQuery(currentQuery, false)
+            hotelAdapter.filter.filter(currentQuery)
+        }
         
         return view
+    }
+    
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        // Сохраняем текущий поисковый запрос
+        outState.putString("search_query", currentQuery)
+    }
+    
+    override fun onViewStateRestored(savedInstanceState: Bundle?) {
+        super.onViewStateRestored(savedInstanceState)
+        // Восстанавливаем состояние поиска после восстановления представления
+        if (savedInstanceState != null) {
+            currentQuery = savedInstanceState.getString("search_query", "")
+            searchView.setQuery(currentQuery, false)
+            hotelAdapter.filter.filter(currentQuery)
+        }
     }
     
     private fun loadHotels() {
@@ -212,6 +243,7 @@ class SearchFragment : Fragment(), HotelAdapter.OnHotelClickListener {
     
     private fun showHotels(hotels: List<Hotel>) {
         if (hotels.isEmpty()) {
+            emptyView.text = "Нет доступных отелей"
             emptyView.visibility = View.VISIBLE
             recyclerView.visibility = View.GONE
         } else {
@@ -299,6 +331,49 @@ class SearchFragment : Fragment(), HotelAdapter.OnHotelClickListener {
     
     private fun hideSearchHistory() {
         searchHistoryRecyclerView.visibility = View.GONE
+    }
+    
+    private fun performSearch(query: String) {
+        if (isSearching) return
+        
+        isSearching = true
+        showSearchProgress(true)
+        
+        CoroutineScope(Dispatchers.Main).launch {
+            try {
+                // Имитируем задержку сети
+                delay(300)
+                
+                // Выполняем поиск
+                hotelAdapter.filter.filter(query)
+                
+                // Проверяем результаты поиска
+                if (hotelAdapter.filteredHotels.isEmpty()) {
+                    showNoResults(query)
+                } else {
+                    hideNoResults()
+                }
+                
+            } finally {
+                isSearching = false
+                showSearchProgress(false)
+            }
+        }
+    }
+    
+    private fun showNoResults(query: String) {
+        emptyView.text = "По запросу \"$query\" ничего не найдено"
+        emptyView.visibility = View.VISIBLE
+        recyclerView.visibility = View.GONE
+    }
+    
+    private fun hideNoResults() {
+        emptyView.visibility = View.GONE
+        recyclerView.visibility = View.VISIBLE
+    }
+    
+    private fun showSearchProgress(show: Boolean) {
+        searchProgressBar.visibility = if (show) View.VISIBLE else View.GONE
     }
     
     companion object {

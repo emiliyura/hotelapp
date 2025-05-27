@@ -20,7 +20,8 @@ class HotelAdapter(private val onHotelClickListener: OnHotelClickListener) :
     RecyclerView.Adapter<HotelAdapter.HotelViewHolder>(), Filterable {
     
     private var hotels: List<Hotel> = listOf()
-    private var filteredHotels: List<Hotel> = listOf()
+    var filteredHotels: List<Hotel> = listOf()
+        private set
     private val TAG = "HotelAdapter"
     
     // Базовый URL для изображений
