@@ -1,8 +1,10 @@
 package com.example.hotelapp
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.fragment.app.Fragment
 import com.example.hotelapp.fragments.ProfileFragment
 import com.example.hotelapp.fragments.SearchFragment
@@ -18,6 +20,10 @@ class MainActivity : AppCompatActivity() {
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Применяем сохраненную тему
+        applyTheme()
+        
         setContentView(R.layout.activity_main)
         
         // Проверяем, вошел ли пользователь в систему
@@ -76,6 +82,16 @@ class MainActivity : AppCompatActivity() {
                     R.id.navigation_settings -> loadFragment(settingsFragment)
                 }
             }
+        }
+    }
+    
+    private fun applyTheme() {
+        val sharedPrefs = getSharedPreferences("ThemePrefs", Context.MODE_PRIVATE)
+        val isDarkTheme = sharedPrefs.getBoolean("isDarkTheme", false)
+        if (isDarkTheme) {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+        } else {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
         }
     }
     
