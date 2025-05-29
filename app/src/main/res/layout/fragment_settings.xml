@@ -30,4 +30,4 @@
         android:contentDescription="Добавить отель"
         android:src="@android:drawable/ic_input_add" />
 
-</FrameLayout> 
+</FrameLayout>

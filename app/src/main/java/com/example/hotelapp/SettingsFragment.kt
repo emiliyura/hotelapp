@@ -68,7 +68,7 @@ class SettingsFragment : Fragment() {
         }
     }
 
-    private fun loadBookings() {
+    public fun loadBookings() {
         val userRole = getUserRole()
         Log.d("SettingsFragment", "Загрузка бронирований. Роль пользователя: $userRole")
 
@@ -126,11 +126,16 @@ class BookingsAdapter : RecyclerView.Adapter<BookingsAdapter.BookingViewHolder>(
     private var bookings: List<Booking> = emptyList()
     private val apiService = ApiService.create()
     private var userRole: String = "user"
+    private var onBookingDeleted: (() -> Unit)? = null
 
     fun submitList(newBookings: List<Booking>, userRole: String) {
         bookings = newBookings
         this.userRole = userRole
         notifyDataSetChanged()
+    }
+
+    fun setOnBookingDeletedListener(listener: () -> Unit) {
+        onBookingDeleted = listener
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BookingViewHolder {
@@ -182,8 +187,11 @@ class BookingsAdapter : RecyclerView.Adapter<BookingsAdapter.BookingViewHolder>(
                             withContext(Dispatchers.Main) {
                                 if (response.isSuccessful) {
                                     Toast.makeText(itemView.context, "Бронирование удалено", Toast.LENGTH_SHORT).show()
-                                    // Здесь нужно обновить список бронирований в фрагменте
-                                    // Это можно сделать через колбэк или LiveData/StateFlow
+                                    // Вызываем колбэк для обновления списка
+                                    (itemView.context as? MainActivity)?.let { activity ->
+                                        val fragment = activity.supportFragmentManager.fragments.find { it is SettingsFragment }
+                                        (fragment as? SettingsFragment)?.loadBookings()
+                                    }
                                 } else {
                                     Toast.makeText(itemView.context, "Ошибка при удалении бронирования", Toast.LENGTH_SHORT).show()
                                 }

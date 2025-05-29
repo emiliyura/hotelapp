@@ -52,7 +52,7 @@ class RegisterActivity : AppCompatActivity() {
         }
     }
 
-    private fun validateInput(username: String, email: String, password: String): Boolean {
+    public fun validateInput(username: String, email: String, password: String): Boolean { //private
         if (username.isEmpty() || email.isEmpty() || password.isEmpty()) {
             Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show()
             return false

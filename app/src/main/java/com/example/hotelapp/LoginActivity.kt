@@ -68,7 +68,7 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
-    private fun validateInput(email: String, password: String): Boolean {
+    public fun validateInput(email: String, password: String): Boolean { //private
         if (email.isEmpty() || password.isEmpty()) {
             Toast.makeText(this, "Пожалуйста, заполните все поля", Toast.LENGTH_SHORT).show()
             return false
