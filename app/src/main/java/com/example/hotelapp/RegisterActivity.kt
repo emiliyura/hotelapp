@@ -54,11 +54,11 @@ class RegisterActivity : AppCompatActivity() {
 
     public fun validateInput(username: String, email: String, password: String): Boolean { //private
         if (username.isEmpty() || email.isEmpty() || password.isEmpty()) {
-            Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Заполните все поля", Toast.LENGTH_SHORT).show()
             return false
         }
         if (password.length < 6) {
-            Toast.makeText(this, "Password must be at least 6 characters", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Пароль должен быть длиннее", Toast.LENGTH_SHORT).show()
             return false
         }
         return true

@@ -59,7 +59,7 @@ class ProfileFragment : Fragment() {
             startActivity(intent)
             requireActivity().finish()
         }
-        
+
         // Обработчик кнопки справки
         helpButton.setOnClickListener {
             showHelp()
@@ -72,7 +72,7 @@ class ProfileFragment : Fragment() {
         val sharedPrefs = requireActivity().getSharedPreferences("UserData", Context.MODE_PRIVATE)
         val username = sharedPrefs.getString("username", "") ?: ""
         val email = sharedPrefs.getString("email", "") ?: ""
-        
+
         usernameText.text = username
         emailText.text = email
     }
@@ -95,9 +95,9 @@ class ProfileFragment : Fragment() {
             apply()
         }
     }
-    
+
     private fun showHelp() {
         val intent = Intent(requireContext(), HelpActivity::class.java)
         startActivity(intent)
     }
-} 
+}

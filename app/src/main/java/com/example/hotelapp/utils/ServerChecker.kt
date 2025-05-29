@@ -8,12 +8,12 @@ import java.net.Socket
 import java.net.SocketTimeoutException
 
 /**
- * Утилитарный класс для проверки доступности сервера
+ *
  */
 object ServerChecker {
     
     /**
-     * Проверяет доступность сервера по указанному хосту и порту
+     *
      * 
      * @param host хост сервера
      * @param port порт сервера
@@ -36,7 +36,7 @@ object ServerChecker {
     }
     
     /**
-     * Проверяет доступность сервера эмулятора Android по порту 8080
+     *
      * 
      * @param timeout таймаут в миллисекундах
      * @return true, если сервер доступен, false в противном случае
