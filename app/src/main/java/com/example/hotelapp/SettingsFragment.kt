@@ -181,9 +181,12 @@ class BookingsAdapter : RecyclerView.Adapter<BookingsAdapter.BookingViewHolder>(
                 deleteButton.visibility = View.VISIBLE
                 deleteButton.setOnClickListener {
                     // Обработчик нажатия на кнопку удаления
+                    Log.d("BookingViewHolder", "Нажата кнопка удаления для бронирования ID: ${booking.id}")
                     CoroutineScope(Dispatchers.IO).launch {
                         try {
+                            Log.d("BookingViewHolder", "Отправляем запрос на удаление бронирования ID: ${booking.id}")
                             val response = apiService.deleteBooking(booking.id!!)
+                            Log.d("BookingViewHolder", "Получен ответ от сервера: ${response.isSuccessful}")
                             withContext(Dispatchers.Main) {
                                 if (response.isSuccessful) {
                                     Toast.makeText(itemView.context, "Бронирование удалено", Toast.LENGTH_SHORT).show()
@@ -193,7 +196,8 @@ class BookingsAdapter : RecyclerView.Adapter<BookingsAdapter.BookingViewHolder>(
                                         (fragment as? SettingsFragment)?.loadBookings()
                                     }
                                 } else {
-                                    Toast.makeText(itemView.context, "Ошибка при удалении бронирования", Toast.LENGTH_SHORT).show()
+                                    Log.e("BookingViewHolder", "Ошибка при удалении: ${response.code()}")
+                                    Toast.makeText(itemView.context, "Ошибка при удалении бронирования: ${response.code()}", Toast.LENGTH_SHORT).show()
                                 }
                             }
                         } catch (e: Exception) {
