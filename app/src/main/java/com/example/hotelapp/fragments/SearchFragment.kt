@@ -7,6 +7,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.InputMethodManager
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
@@ -31,7 +32,7 @@ import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 
 class SearchFragment : Fragment(), HotelAdapter.OnHotelClickListener {
-    
+
     private lateinit var recyclerView: RecyclerView
     private lateinit var searchHistoryRecyclerView: RecyclerView
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
@@ -39,7 +40,7 @@ class SearchFragment : Fragment(), HotelAdapter.OnHotelClickListener {
     private lateinit var progressBar: ProgressBar
     private lateinit var searchProgressBar: ProgressBar
     private lateinit var emptyView: TextView
-    
+
     private val hotelAdapter = HotelAdapter(this)
     private val searchHistoryAdapter = SearchHistoryAdapter(
         onItemClick = { query ->
@@ -50,19 +51,17 @@ class SearchFragment : Fragment(), HotelAdapter.OnHotelClickListener {
             removeFromSearchHistory(query)
         }
     )
-    
+
     private val MAX_HISTORY_ITEMS = 10
     private var currentQuery: String = ""
     private var isSearching = false
-    
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        // Inflate the layout for this fragment
         val view = inflater.inflate(R.layout.fragment_search, container, false)
-        
-        // Инициализация UI элементов
+
         recyclerView = view.findViewById(R.id.hotels_recycler_view)
         searchHistoryRecyclerView = view.findViewById(R.id.search_history_recycler_view)
         swipeRefreshLayout = view.findViewById(R.id.swipe_refresh)
@@ -70,24 +69,24 @@ class SearchFragment : Fragment(), HotelAdapter.OnHotelClickListener {
         progressBar = view.findViewById(R.id.progress_bar)
         searchProgressBar = view.findViewById(R.id.search_progress_bar)
         emptyView = view.findViewById(R.id.empty_view)
-        
-        // Настройка RecyclerView для отелей
+
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = hotelAdapter
-        
-        // Настройка RecyclerView для истории поиска
+
         searchHistoryRecyclerView.layoutManager = LinearLayoutManager(requireContext())
         searchHistoryRecyclerView.adapter = searchHistoryAdapter
-        
-        // Настройка SwipeRefreshLayout
+
         swipeRefreshLayout.setOnRefreshListener {
             loadHotels()
         }
-        
-        // Настройка SearchView
+
         searchView.queryHint = "Введите название отеля"
         searchView.isIconified = false
-        searchView.requestFocus()
+
+        // Инициализация SearchView без автоматического фокуса
+        searchView.clearFocus()
+        updateCloseButtonVisibility()
+
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 query?.let {
@@ -98,13 +97,16 @@ class SearchFragment : Fragment(), HotelAdapter.OnHotelClickListener {
                         performSearch(it)
                     }
                 }
+                updateCloseButtonVisibility()
                 return false
             }
-            
+
             override fun onQueryTextChange(newText: String?): Boolean {
                 currentQuery = newText ?: ""
+                updateCloseButtonVisibility()
                 if (newText.isNullOrBlank()) {
                     showSearchHistory()
+                    hotelAdapter.filter.filter("")
                 } else {
                     hideSearchHistory()
                     performSearch(newText)
@@ -113,74 +115,87 @@ class SearchFragment : Fragment(), HotelAdapter.OnHotelClickListener {
             }
         })
 
-        // Показываем историю поиска при фокусе на SearchView
         searchView.setOnQueryTextFocusChangeListener { _, hasFocus ->
             if (hasFocus && searchView.query.isNullOrBlank()) {
                 showSearchHistory()
+            } else {
+                hideSearchHistory()
             }
         }
-        
-        // Добавляем кнопку очистки
-        searchView.setOnCloseListener {
+
+        // Обработка нажатия на кнопку "Крестик"
+        val closeButton = searchView.findViewById<View>(androidx.appcompat.R.id.search_close_btn)
+        closeButton?.setOnClickListener {
             currentQuery = ""
             searchView.setQuery("", false)
+            searchView.clearFocus() // Убираем фокус
             hotelAdapter.filter.filter("")
             showSearchHistory()
-            true
+            updateCloseButtonVisibility()
+
+            // Скрываем клавиатуру
+            val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.hideSoftInputFromWindow(searchView.windowToken, 0)
+
+            // Обновляем список отелей
+            loadHotels()
         }
-        
-        // Загрузка отелей при создании фрагмента
+
         loadHotels()
 
-        // Восстанавливаем состояние поиска
         if (savedInstanceState != null) {
             currentQuery = savedInstanceState.getString("search_query", "")
             searchView.setQuery(currentQuery, false)
+            searchView.clearFocus() // Убираем фокус после восстановления
             hotelAdapter.filter.filter(currentQuery)
+            updateCloseButtonVisibility()
         }
-        
+
         return view
     }
-    
+
+    override fun onResume() {
+        super.onResume()
+        // При возвращении во фрагмент очищаем фокус и обновляем видимость кнопки
+        searchView.clearFocus()
+        updateCloseButtonVisibility()
+    }
+
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        // Сохраняем текущий поисковый запрос
         outState.putString("search_query", currentQuery)
     }
-    
+
     override fun onViewStateRestored(savedInstanceState: Bundle?) {
         super.onViewStateRestored(savedInstanceState)
-        // Восстанавливаем состояние поиска после восстановления представления
         if (savedInstanceState != null) {
             currentQuery = savedInstanceState.getString("search_query", "")
             searchView.setQuery(currentQuery, false)
+            searchView.clearFocus() // Убираем фокус после восстановления
             hotelAdapter.filter.filter(currentQuery)
+            updateCloseButtonVisibility()
         }
     }
-    
+
     private fun loadHotels() {
         showLoading(true)
-        
+
         CoroutineScope(Dispatchers.Main).launch {
             try {
-                // Проверка доступности сервера
                 val isServerAvailable = ServerChecker.isEmulatorServerReachable()
                 if (!isServerAvailable) {
                     Log.w(TAG, "Сервер недоступен, загружаем тестовые данные")
-                    // Если сервер недоступен, показываем тестовые данные
                     showHotels(getTestHotels())
                     return@launch
                 }
-                
-                // Загрузка отелей с сервера
+
                 val response = withContext(Dispatchers.IO) {
                     ApiClient.apiService.getAllHotels()
                 }
-                
+
                 if (response.isSuccessful) {
                     val hotels = response.body() ?: emptyList()
                     if (hotels.isEmpty()) {
-                        // Если список пуст, показываем тестовые данные
                         showHotels(getTestHotels())
                     } else {
                         showHotels(hotels)
@@ -202,9 +217,8 @@ class SearchFragment : Fragment(), HotelAdapter.OnHotelClickListener {
             }
         }
     }
-    
+
     private fun getTestHotels(): List<Hotel> {
-        // Создаем тестовые данные для отображения
         return listOf(
             Hotel(
                 id = 1,
@@ -240,7 +254,7 @@ class SearchFragment : Fragment(), HotelAdapter.OnHotelClickListener {
             )
         )
     }
-    
+
     private fun showHotels(hotels: List<Hotel>) {
         if (hotels.isEmpty()) {
             emptyView.text = "Нет доступных отелей"
@@ -252,7 +266,7 @@ class SearchFragment : Fragment(), HotelAdapter.OnHotelClickListener {
             hotelAdapter.setHotels(hotels)
         }
     }
-    
+
     private fun showLoading(isLoading: Boolean) {
         if (isLoading) {
             progressBar.visibility = View.VISIBLE
@@ -263,7 +277,7 @@ class SearchFragment : Fragment(), HotelAdapter.OnHotelClickListener {
             swipeRefreshLayout.isRefreshing = false
         }
     }
-    
+
     private fun showError(message: String) {
         Log.e(TAG, message)
         Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
@@ -271,46 +285,37 @@ class SearchFragment : Fragment(), HotelAdapter.OnHotelClickListener {
         emptyView.visibility = View.VISIBLE
         recyclerView.visibility = View.GONE
     }
-    
+
     override fun onHotelClick(hotel: Hotel) {
-        // Открываем HotelDetailActivity при нажатии на отель
         val intent = Intent(requireContext(), HotelDetailActivity::class.java)
         intent.putExtra(HotelDetailActivity.EXTRA_HOTEL, hotel)
         startActivity(intent)
     }
-    
+
     private fun addToSearchHistory(query: String) {
         val sharedPrefs = requireContext().getSharedPreferences("SearchHistory", Context.MODE_PRIVATE)
         val history = getSearchHistory().toMutableList()
-        
-        // Удаляем дубликаты
+
         history.remove(query)
-        
-        // Добавляем новый запрос в начало списка
         history.add(0, query)
-        
-        // Ограничиваем количество элементов
+
         if (history.size > MAX_HISTORY_ITEMS) {
             history.removeAt(history.size - 1)
         }
-        
-        // Сохраняем историю
+
         sharedPrefs.edit().putString("history", history.joinToString(",")).apply()
-        
-        // Обновляем адаптер
         searchHistoryAdapter.setSearchHistory(history)
     }
-    
+
     private fun removeFromSearchHistory(query: String) {
         val sharedPrefs = requireContext().getSharedPreferences("SearchHistory", Context.MODE_PRIVATE)
         val history = getSearchHistory().toMutableList()
-        
+
         history.remove(query)
-        
         sharedPrefs.edit().putString("history", history.joinToString(",")).apply()
         searchHistoryAdapter.setSearchHistory(history)
     }
-    
+
     private fun getSearchHistory(): List<String> {
         val sharedPrefs = requireContext().getSharedPreferences("SearchHistory", Context.MODE_PRIVATE)
         val historyString = sharedPrefs.getString("history", "") ?: ""
@@ -320,7 +325,7 @@ class SearchFragment : Fragment(), HotelAdapter.OnHotelClickListener {
             historyString.split(",")
         }
     }
-    
+
     private fun showSearchHistory() {
         val history = getSearchHistory()
         if (history.isNotEmpty()) {
@@ -328,55 +333,55 @@ class SearchFragment : Fragment(), HotelAdapter.OnHotelClickListener {
             searchHistoryRecyclerView.visibility = View.VISIBLE
         }
     }
-    
+
     private fun hideSearchHistory() {
         searchHistoryRecyclerView.visibility = View.GONE
     }
-    
+
     private fun performSearch(query: String) {
         if (isSearching) return
-        
+
         isSearching = true
         showSearchProgress(true)
-        
+
         CoroutineScope(Dispatchers.Main).launch {
             try {
-                // Имитируем задержку сети
                 delay(300)
-                
-                // Выполняем поиск
                 hotelAdapter.filter.filter(query)
-                
-                // Проверяем результаты поиска
+
                 if (hotelAdapter.filteredHotels.isEmpty()) {
                     showNoResults(query)
                 } else {
                     hideNoResults()
                 }
-                
             } finally {
                 isSearching = false
                 showSearchProgress(false)
             }
         }
     }
-    
+
     private fun showNoResults(query: String) {
         emptyView.text = "По запросу \"$query\" ничего не найдено"
         emptyView.visibility = View.VISIBLE
         recyclerView.visibility = View.GONE
     }
-    
+
     private fun hideNoResults() {
         emptyView.visibility = View.GONE
         recyclerView.visibility = View.VISIBLE
     }
-    
+
     private fun showSearchProgress(show: Boolean) {
         searchProgressBar.visibility = if (show) View.VISIBLE else View.GONE
     }
-    
+
+    private fun updateCloseButtonVisibility() {
+        val closeButton = searchView.findViewById<View>(androidx.appcompat.R.id.search_close_btn)
+        closeButton?.visibility = if (searchView.query.isNullOrEmpty()) View.GONE else View.VISIBLE
+    }
+
     companion object {
         private const val TAG = "SearchFragment"
     }
-} 
+}
